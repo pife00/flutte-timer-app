@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:material_color_generator/material_color_generator.dart';
 
-import 'dart:isolate';
 import 'dart:async';
 import 'dart:developer';
 
@@ -102,21 +100,6 @@ Future<void> onStart(ServiceInstance service) async {
   });
 }
 
-Map<int, Color> color = {
-  50: Color.fromRGBO(136, 14, 79, .1),
-  100: Color.fromRGBO(136, 14, 79, .2),
-  200: Color.fromRGBO(136, 14, 79, .3),
-  300: Color.fromRGBO(136, 14, 79, .4),
-  400: Color.fromRGBO(136, 14, 79, .5),
-  500: Color.fromRGBO(136, 14, 79, .6),
-  600: Color.fromRGBO(136, 14, 79, .7),
-  700: Color.fromRGBO(136, 14, 79, .8),
-  800: Color.fromRGBO(136, 14, 79, .9),
-  900: Color.fromRGBO(136, 14, 79, 1),
-};
-
-MaterialColor colorCustom = MaterialColor(0xFF880E4F, color);
-
 /// This is the main application widget.
 class MyApp extends StatelessWidget {
   @override
@@ -137,11 +120,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int count = 0;
+  int counter = 0;
+  bool timerActive = false;
+  late StreamSubscription streamSubscription;
 
   @override
   void initState() {
     super.initState();
+    final service = FlutterBackgroundService();
+    service.on('update').listen((event) {
+      if (timerActive == true) {
+        setState(() => counter++);
+      }
+    });
   }
 
   void startTimer() {
@@ -150,6 +141,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   stopTimer() async {
+    log('service stopped');
     final service = FlutterBackgroundService();
     var isRunning = await service.isRunning();
     if (isRunning) {
@@ -159,6 +151,15 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {});
+  }
+
+  String timerPretty(int count) {
+    var minutes = (count / 60).floor();
+    var seconds = (count % 60);
+    if (seconds < 10) {
+      return '$minutes : 0$seconds';
+    }
+    return '$minutes : $seconds';
   }
 
   @override
@@ -171,29 +172,39 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
-        title: Text('Timers'),
+        title: const Text('Timers'),
       ),
       body: Column(
         children: [
           Center(
-              child: StreamBuilder<Map<String, dynamic>?>(
-                  stream: FlutterBackgroundService().on('update'),
-                  builder: ((context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                    final data = snapshot.data!;
-                    int? counter = data['counter'];
-                    return Center(child: Text('$counter'));
-                  }))),
-          TextButton(onPressed: startTimer, child: Text('Iniciame BB'))
+              child: Text(timerPretty(counter),
+                  style: const TextStyle(color: Colors.amber, fontSize: 50))),
+          !timerActive
+              ? TextButton(
+                  onPressed: () {
+                    setState(() {
+                      timerActive = !timerActive;
+                    });
+                  },
+                  child: const Icon(
+                    Icons.play_circle_outline_outlined,
+                    size: 30,
+                  ))
+              : TextButton(
+                  onPressed: () {
+                    setState(() {
+                      timerActive = !timerActive;
+                    });
+                  },
+                  child: const Icon(
+                    Icons.pause_circle,
+                    size: 30,
+                  )),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: stopTimer,
-        child: Icon(Icons.stop_circle),
+        child: const Icon(Icons.stop_circle),
       ),
     );
   }
