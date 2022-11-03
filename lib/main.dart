@@ -159,7 +159,6 @@ class _HomePageState extends State<HomePage> {
         children: [
           TimerLess(tick: service),
           TimerLess(tick: service),
-          TimerLess(tick: service),
         ],
       ),
       floatingActionButton: FloatingActionButton(
