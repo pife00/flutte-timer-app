@@ -1,3 +1,4 @@
+import 'package:bg_service/timer/timer.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:async';
@@ -19,7 +20,6 @@ const notificationChannelId = 'my_foreground';
 
 // this will be used for notification id, So you can update your custom notification with this id.
 const notificationId = 888;
-int counter = 0;
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
@@ -80,11 +80,10 @@ Future<void> onStart(ServiceInstance service) async {
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
-        counter++;
         flutterLocalNotificationsPlugin.show(
           notificationId,
           'COOL SERVICE',
-          'Awesome ${counter}',
+          'Awesome ',
           const NotificationDetails(
             android: AndroidNotificationDetails(
               notificationChannelId,
@@ -96,7 +95,7 @@ Future<void> onStart(ServiceInstance service) async {
         );
       }
     }
-    service.invoke('update', {"counter": counter});
+    service.invoke('update', {"counter": 'Heloo'});
   });
 }
 
@@ -120,19 +119,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int counter = 0;
-  bool timerActive = false;
-  late StreamSubscription streamSubscription;
-
   @override
   void initState() {
     super.initState();
-    final service = FlutterBackgroundService();
-    service.on('update').listen((event) {
-      if (timerActive == true) {
-        setState(() => counter++);
-      }
-    });
   }
 
   void startTimer() {
@@ -153,15 +142,6 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  String timerPretty(int count) {
-    var minutes = (count / 60).floor();
-    var seconds = (count % 60);
-    if (seconds < 10) {
-      return '$minutes : 0$seconds';
-    }
-    return '$minutes : $seconds';
-  }
-
   @override
   void dispose() {
     super.dispose();
@@ -169,6 +149,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final service = FlutterBackgroundService();
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
@@ -176,30 +157,9 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          Center(
-              child: Text(timerPretty(counter),
-                  style: const TextStyle(color: Colors.amber, fontSize: 50))),
-          !timerActive
-              ? TextButton(
-                  onPressed: () {
-                    setState(() {
-                      timerActive = !timerActive;
-                    });
-                  },
-                  child: const Icon(
-                    Icons.play_circle_outline_outlined,
-                    size: 30,
-                  ))
-              : TextButton(
-                  onPressed: () {
-                    setState(() {
-                      timerActive = !timerActive;
-                    });
-                  },
-                  child: const Icon(
-                    Icons.pause_circle,
-                    size: 30,
-                  )),
+          TimerLess(tick: service),
+          TimerLess(tick: service),
+          TimerLess(tick: service),
         ],
       ),
       floatingActionButton: FloatingActionButton(
