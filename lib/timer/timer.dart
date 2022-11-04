@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
+import 'package:audioplayers/audioplayers.dart';
+
+final player = AudioPlayer();
 
 class TimerLess extends StatefulWidget {
-  const TimerLess({super.key, required this.tick});
+  const TimerLess({
+    super.key,
+    required this.tick,
+  });
   final FlutterBackgroundService tick;
+  //final Function(String) sendData;
 
   @override
   State<TimerLess> createState() => _TimerState();
@@ -25,10 +32,11 @@ class _TimerState extends State<TimerLess> {
     const Duration(milliseconds: 500),
   ];
 
-  int counter = 5;
+  int counter = 0;
   bool timerActive = false;
   int valueToPick = 15;
   int valueToReach = 0;
+  bool isEndTimer = false;
 
   String timerPretty(int count) {
     var minutes = (count / 60).floor();
@@ -39,6 +47,14 @@ class _TimerState extends State<TimerLess> {
     return '$minutes : $seconds';
   }
 
+  Future playAudio() async {
+    await player.play(AssetSource('sounds/Ereve.mp3'));
+  }
+
+  Future stopAudio() async {
+    await player.stop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,8 +63,16 @@ class _TimerState extends State<TimerLess> {
       if (counter > 0) {
         if (timerActive == true) {
           setState(() => counter--);
+
           if (counter <= 0) {
-            timerActive = false;
+            setState(() {
+              timerActive = false;
+              playAudio();
+
+              _dialogBuilder(context);
+              isEndTimer = true;
+            });
+
             await onVibration();
           }
         }
@@ -67,6 +91,11 @@ class _TimerState extends State<TimerLess> {
     counter = valueToReach;
     valueToPick = 15;
     setState(() {});
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -106,7 +135,7 @@ class _TimerState extends State<TimerLess> {
                                   child: const Text(
                                     'OK',
                                     style: TextStyle(color: Colors.black),
-                                  ))
+                                  )),
                             ],
                           ),
                         );
@@ -129,12 +158,44 @@ class _TimerState extends State<TimerLess> {
                               fontWeight: FontWeight.w500,
                               fontSize: 60)),
                     ),
-                    playButton()
+                    playButton(),
                   ],
                 ),
               ),
             )),
       ],
+    );
+  }
+
+  Future<void> _dialogBuilder(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Acabo alguien',
+            style: TextStyle(color: Colors.amber),
+          ),
+          content: const Text(
+              'Se le termino el tiempo a alguien ni idea busca.',
+              style: TextStyle(color: Colors.amber)),
+          backgroundColor: Colors.grey[800],
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(backgroundColor: Colors.amber),
+              child: const Text(
+                'Aceptar',
+                style: TextStyle(color: Colors.black),
+              ),
+              onPressed: () {
+                stopAudio();
+
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

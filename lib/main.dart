@@ -119,6 +119,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Function(String)? getTimersData;
+
+  getTimerData(String name) {}
+
   @override
   void initState() {
     super.initState();
@@ -159,12 +163,56 @@ class _HomePageState extends State<HomePage> {
         children: [
           TimerLess(tick: service),
           TimerLess(tick: service),
+          TimerLess(tick: service),
+          TimerLess(tick: service),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: stopTimer,
         child: const Icon(Icons.stop_circle),
       ),
+    );
+  }
+
+  Future<void> _showMyDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('AlertDialog Title'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: const <Widget>[
+                Text('This is a demo alert dialog.'),
+                Text('Would you like to approve of this message?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Approve'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget dialogTimerEnd() {
+    return AlertDialog(
+      title: Text('Tiempo Culminado'),
+      content: Text('Tiempo terminado del'),
+      actions: [TextButton(onPressed: () {}, child: Text('Ok'))],
     );
   }
 }
