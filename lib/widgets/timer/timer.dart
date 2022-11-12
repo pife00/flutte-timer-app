@@ -5,6 +5,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final player = AudioPlayer();
 
@@ -17,7 +18,7 @@ class TimerLess extends StatefulWidget {
 
   final FlutterBackgroundService tick;
   int timerName = 1;
-  final Function(int) sendData;
+  final Function(int, String) sendData;
 
   @override
   State<TimerLess> createState() => _TimerState();
@@ -43,13 +44,21 @@ class _TimerState extends State<TimerLess> {
   int valueToReach = 0;
   bool isEndTimer = false;
 
+  final Future<SharedPreferences> prefs = SharedPreferences.getInstance();
+  late Future<String> timerData;
+
   String timerPretty(int count) {
     var minutes = (count / 60).floor();
     var seconds = (count % 60);
-    if (seconds < 10) {
-      return '$minutes : 0$seconds';
+    var m = '$minutes';
+    var s = '$seconds';
+    if (minutes < 10) {
+      m = '0$minutes';
     }
-    return '$minutes : $seconds';
+    if (seconds < 10) {
+      s = '0$seconds';
+    }
+    return '$m : $s';
   }
 
   Future playAudio() async {
@@ -63,14 +72,16 @@ class _TimerState extends State<TimerLess> {
   @override
   void initState() {
     super.initState();
-    // widget.sendData(counter);
-
+    timerData = prefs.then((SharedPreferences prefs) {
+      return prefs.getString('timersData') ?? 'Nada';
+    });
+    log('$timerData');
+    String name = 'PC:${widget.timerName}';
     widget.tick.on('update').listen((event) async {
       if (counter > 0) {
         if (timerActive == true) {
           setState(() => counter--);
-          widget.sendData(counter);
-
+          widget.sendData(counter, name);
           if (counter <= 0) {
             setState(() {
               timerActive = false;
@@ -85,10 +96,6 @@ class _TimerState extends State<TimerLess> {
         }
       }
     });
-  }
-
-  void sendData(int counter) {
-    log('$Counter');
   }
 
   onVibration() async {
@@ -170,6 +177,10 @@ class _TimerState extends State<TimerLess> {
                               fontSize: 60)),
                     ),
                     playButton(),
+                    Text(
+                      '$timerData',
+                      style: TextStyle(color: Colors.amber),
+                    )
                   ],
                 ),
               ),

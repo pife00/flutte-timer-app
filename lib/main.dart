@@ -1,4 +1,6 @@
-import 'package:bg_service/timer/timer.dart';
+import 'dart:convert';
+import './models/CountData.dart';
+import 'package:bg_service/widgets/timer/timer.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:async';
@@ -85,12 +87,12 @@ Future<void> onStart(ServiceInstance service) async {
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     final pref = await SharedPreferences.getInstance();
     await pref.reload();
-    final int? counter = pref.getInt('count');
+    final String? timeData = pref.getString('timersData');
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         flutterLocalNotificationsPlugin.show(
           notificationId,
-          'COOL SERVICE: $counter',
+          'COOL SERVICE: $timeData',
           'Awesome ',
           const NotificationDetails(
             android: AndroidNotificationDetails(
@@ -108,11 +110,29 @@ Future<void> onStart(ServiceInstance service) async {
 }
 
 final service = FlutterBackgroundService();
+List<countData> nameCounter = [];
 
-recieveDataFromTimer(int str) async {
+recieveDataFromTimer(int counter, String name) async {
   final pref = await SharedPreferences.getInstance();
+  var payload = countData(name, counter);
 
-  await pref.setInt('count', str);
+  var seen = Set<String>();
+
+  nameCounter.add(payload);
+  List<countData> unique =
+      nameCounter.where((element) => seen.add(element.name)).toList();
+
+  //print(unique.length);
+  unique.asMap().forEach((key, value) {
+    if (value.name == payload.name) {
+      unique[key].name = payload.name;
+      unique[key].count = payload.count;
+    }
+  });
+
+  String enconde = jsonEncode(unique);
+  print(enconde);
+  await pref.setString('timersData', enconde);
 }
 
 /// This is the main application widget.
@@ -138,10 +158,10 @@ class _HomePageState extends State<HomePage> {
   Function(String)? getTimersData;
 
   List<TimerLess> myTimers = [
-    TimerLess(tick: service, sendData: recieveDataFromTimer),
-    TimerLess(tick: service, sendData: recieveDataFromTimer),
-    TimerLess(tick: service, sendData: recieveDataFromTimer),
-    TimerLess(tick: service, sendData: recieveDataFromTimer)
+    TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 1),
+    TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 2),
+    TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 3),
+    TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 4),
   ];
 
   getTimerData(String name) {}
@@ -194,8 +214,10 @@ class _HomePageState extends State<HomePage> {
                 })),
         InkWell(
           onTap: () {
-            myTimers
-                .add(TimerLess(tick: service, sendData: recieveDataFromTimer));
+            myTimers.add(TimerLess(
+                tick: service,
+                sendData: recieveDataFromTimer,
+                timerName: myTimers.length + 1));
             setState(() {});
           },
           child: Text(
