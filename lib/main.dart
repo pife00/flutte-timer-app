@@ -8,6 +8,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,13 +77,20 @@ Future<void> onStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
+  service.on('getTimerData').listen((event) {
+    //print()
+  });
+
   // bring to foreground
   Timer.periodic(const Duration(seconds: 1), (timer) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.reload();
+    final int? counter = pref.getInt('count');
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         flutterLocalNotificationsPlugin.show(
           notificationId,
-          'COOL SERVICE',
+          'COOL SERVICE: $counter',
           'Awesome ',
           const NotificationDetails(
             android: AndroidNotificationDetails(
@@ -97,6 +105,14 @@ Future<void> onStart(ServiceInstance service) async {
     }
     service.invoke('update', {"counter": 'Heloo'});
   });
+}
+
+final service = FlutterBackgroundService();
+
+recieveDataFromTimer(int str) async {
+  final pref = await SharedPreferences.getInstance();
+
+  await pref.setInt('count', str);
 }
 
 /// This is the main application widget.
@@ -120,6 +136,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Function(String)? getTimersData;
+
+  List<TimerLess> myTimers = [
+    TimerLess(tick: service, sendData: recieveDataFromTimer),
+    TimerLess(tick: service, sendData: recieveDataFromTimer),
+    TimerLess(tick: service, sendData: recieveDataFromTimer),
+    TimerLess(tick: service, sendData: recieveDataFromTimer)
+  ];
 
   getTimerData(String name) {}
 
@@ -146,6 +169,8 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
+  addTimer() {}
+
   @override
   void dispose() {
     super.dispose();
@@ -154,65 +179,37 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final service = FlutterBackgroundService();
+
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
         title: const Text('Timers'),
       ),
-      body: Column(
-        children: [
-          TimerLess(tick: service),
-          TimerLess(tick: service),
-          TimerLess(tick: service),
-          TimerLess(tick: service),
-        ],
-      ),
+      body: Column(children: <Widget>[
+        Expanded(
+            child: ListView.builder(
+                itemCount: myTimers.length,
+                itemBuilder: (context, index) {
+                  return myTimers[index];
+                })),
+        InkWell(
+          onTap: () {
+            myTimers
+                .add(TimerLess(tick: service, sendData: recieveDataFromTimer));
+            setState(() {});
+          },
+          child: Text(
+            'Añadir',
+            style: TextStyle(color: Colors.amber),
+          ),
+        )
+      ]),
       floatingActionButton: FloatingActionButton(
-        onPressed: stopTimer,
+        onPressed: (() {
+          stopTimer();
+        }),
         child: const Icon(Icons.stop_circle),
       ),
-    );
-  }
-
-  Future<void> _showMyDialog() async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('AlertDialog Title'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: const <Widget>[
-                Text('This is a demo alert dialog.'),
-                Text('Would you like to approve of this message?'),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Approve'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget dialogTimerEnd() {
-    return AlertDialog(
-      title: Text('Tiempo Culminado'),
-      content: Text('Tiempo terminado del'),
-      actions: [TextButton(onPressed: () {}, child: Text('Ok'))],
     );
   }
 }

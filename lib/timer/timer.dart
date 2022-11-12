@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:numberpicker/numberpicker.dart';
@@ -7,12 +9,15 @@ import 'package:audioplayers/audioplayers.dart';
 final player = AudioPlayer();
 
 class TimerLess extends StatefulWidget {
-  const TimerLess({
-    super.key,
-    required this.tick,
-  });
+  TimerLess(
+      {super.key,
+      required this.tick,
+      this.timerName = 1,
+      required this.sendData});
+
   final FlutterBackgroundService tick;
-  //final Function(String) sendData;
+  int timerName = 1;
+  final Function(int) sendData;
 
   @override
   State<TimerLess> createState() => _TimerState();
@@ -58,11 +63,13 @@ class _TimerState extends State<TimerLess> {
   @override
   void initState() {
     super.initState();
+    // widget.sendData(counter);
 
     widget.tick.on('update').listen((event) async {
       if (counter > 0) {
         if (timerActive == true) {
           setState(() => counter--);
+          widget.sendData(counter);
 
           if (counter <= 0) {
             setState(() {
@@ -78,6 +85,10 @@ class _TimerState extends State<TimerLess> {
         }
       }
     });
+  }
+
+  void sendData(int counter) {
+    log('$Counter');
   }
 
   onVibration() async {
