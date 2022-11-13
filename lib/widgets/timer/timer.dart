@@ -49,6 +49,7 @@ class _TimerState extends State<TimerLess> {
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   String timerData = '';
   late String name;
+  List<CountData> myTimerPersisnt = [];
 
   String timerPretty(int count) {
     var minutes = (count / 60).floor();
@@ -76,22 +77,26 @@ class _TimerState extends State<TimerLess> {
     var prefs = await _prefs;
     final String? data = await prefs.getString('timersData');
     List<dynamic> json = jsonDecode(data!);
-    var myTimer = json.map((el) {
-      var timer = CountData.fromJson(el);
-      if (timer.name == name) {
-        return el;
-      }
-    });
 
-    print(myTimer);
+    var myTimer = CountData('', 0);
 
-    //print(timers[0].name);
-    //var json = jsonDecode(data!);
-    // List result = json as List<dynamic>;
-    // var a = CountData.fromJson(result as Map<String, dynamic>);
+    json.forEach((element) => {
+          if (CountData.fromJson(element).name == name)
+            {
+              myTimer.name = CountData.fromJson(element).name,
+              myTimer.count = CountData.fromJson(element).count
+            }
+        });
 
+    // print(myTimer.name);
+    if (myTimer.count > 0) {
+      setState(() {
+        counter = myTimer.count;
+        timerActive = true;
+      });
+    }
     setState(() {
-      timerData = 'data!';
+      timerData = '$counter';
     });
   }
 
@@ -190,25 +195,37 @@ class _TimerState extends State<TimerLess> {
                 height: 100,
                 color: Colors.grey[800],
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Padding(
-                      padding: const EdgeInsets.all(5),
+                      padding: const EdgeInsets.all(6),
                       child: Text(timerPretty(counter),
                           style: const TextStyle(
                               color: Colors.amber,
                               fontWeight: FontWeight.w500,
                               fontSize: 60)),
                     ),
-                    playButton(),
-                    Text(
-                      '$timerData',
-                      style: TextStyle(color: Colors.amber),
-                    )
+                    Align(
+                      child: playSwitch(),
+                    ),
                   ],
                 ),
               ),
             )),
       ],
+    );
+  }
+
+  Widget playSwitch() {
+    return Switch(
+      // This bool value toggles the switch.
+      value: timerActive,
+      activeColor: Colors.amber,
+      onChanged: (bool value) {
+        setState(() {
+          timerActive = value;
+        });
+      },
     );
   }
 
@@ -242,29 +259,5 @@ class _TimerState extends State<TimerLess> {
         );
       },
     );
-  }
-
-  Widget playButton() {
-    return !timerActive
-        ? TextButton(
-            onPressed: () {
-              setState(() {
-                timerActive = !timerActive;
-              });
-            },
-            child: const Icon(
-              Icons.play_circle_outline_outlined,
-              size: 30,
-            ))
-        : TextButton(
-            onPressed: () {
-              setState(() {
-                timerActive = !timerActive;
-              });
-            },
-            child: const Icon(
-              Icons.pause_circle,
-              size: 30,
-            ));
   }
 }

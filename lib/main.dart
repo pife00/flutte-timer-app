@@ -49,7 +49,7 @@ Future<void> initializeService() async {
       onStart: onStart,
 
       // auto start service
-      autoStart: false,
+      autoStart: true,
       isForegroundMode: true,
 
       notificationChannelId:
@@ -154,8 +154,9 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Function(String)? getTimersData;
+  int counter = 0;
 
   List<TimerLess> myTimers = [
     TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 1),
@@ -169,6 +170,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   void startTimer() {
@@ -177,15 +179,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   stopTimer() async {
-    log('service stopped');
     final service = FlutterBackgroundService();
     var isRunning = await service.isRunning();
     if (isRunning) {
       service.invoke("stopService");
+      log('timer stop');
     } else {
       service.startService();
+      log('timer on');
     }
-
     setState(() {});
   }
 
@@ -193,7 +195,29 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    // TODO: implement didChangeAppLifecycleState
+    super.didChangeAppLifecycleState(state);
+
+    final isbackground = state == AppLifecycleState.paused;
+    final isClose = state == AppLifecycleState.detached;
+    //final service = FlutterBackgroundService();
+
+    /*if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) return;*/
+
+    if (isbackground) {
+      log('esta en background');
+    }
+
+    if (isClose) {
+      log('close');
+    }
   }
 
   @override
@@ -212,7 +236,10 @@ class _HomePageState extends State<HomePage> {
                 itemBuilder: (context, index) {
                   return myTimers[index];
                 })),
-        InkWell(
+      ]),
+      floatingActionButton: FloatingActionButton(
+        onPressed: null,
+        child: InkWell(
           onTap: () {
             myTimers.add(TimerLess(
                 tick: service,
@@ -220,17 +247,9 @@ class _HomePageState extends State<HomePage> {
                 timerName: myTimers.length + 1));
             setState(() {});
           },
-          child: Text(
-            'Añadir',
-            style: TextStyle(color: Colors.amber),
-          ),
-        )
-      ]),
-      floatingActionButton: FloatingActionButton(
-        onPressed: (() {
-          stopTimer();
-        }),
-        child: const Icon(Icons.stop_circle),
+          onDoubleTap: stopTimer,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
