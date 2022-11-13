@@ -110,16 +110,16 @@ Future<void> onStart(ServiceInstance service) async {
 }
 
 final service = FlutterBackgroundService();
-List<countData> nameCounter = [];
+List<CountData> nameCounter = [];
 
 recieveDataFromTimer(int counter, String name) async {
   final pref = await SharedPreferences.getInstance();
-  var payload = countData(name, counter);
+  var payload = CountData(name, counter);
 
   var seen = Set<String>();
 
   nameCounter.add(payload);
-  List<countData> unique =
+  List<CountData> unique =
       nameCounter.where((element) => seen.add(element.name)).toList();
 
   //print(unique.length);
@@ -131,7 +131,7 @@ recieveDataFromTimer(int counter, String name) async {
   });
 
   String enconde = jsonEncode(unique);
-  print(enconde);
+
   await pref.setString('timersData', enconde);
 }
 
