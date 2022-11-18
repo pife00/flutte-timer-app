@@ -88,11 +88,13 @@ Future<void> onStart(ServiceInstance service) async {
     final pref = await SharedPreferences.getInstance();
     await pref.reload();
     final String? timeData = pref.getString('timersData');
+    final String? date = pref.getString('date');
+    // print(date);
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         flutterLocalNotificationsPlugin.show(
           notificationId,
-          'COOL SERVICE: $timeData',
+          '$date',
           'Awesome ',
           const NotificationDetails(
             android: AndroidNotificationDetails(
@@ -114,8 +116,8 @@ List<CountData> nameCounter = [];
 
 recieveDataFromTimer(int counter, String name) async {
   final pref = await SharedPreferences.getInstance();
+  var appDateKilled = DateTime.now();
   var payload = CountData(name, counter);
-
   var seen = Set<String>();
 
   nameCounter.add(payload);
@@ -133,6 +135,7 @@ recieveDataFromTimer(int counter, String name) async {
   String enconde = jsonEncode(unique);
 
   await pref.setString('timersData', enconde);
+  await pref.setString('date', appDateKilled.toString());
 }
 
 /// This is the main application widget.
@@ -164,6 +167,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 3),
     TimerLess(tick: service, sendData: recieveDataFromTimer, timerName: 4),
   ];
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    // TODO: implement didChangeAppLifecycleState
+    super.didChangeAppLifecycleState(state);
+    final pref = await SharedPreferences.getInstance();
+    final isbackground = state == AppLifecycleState.paused;
+    final isClose = state == AppLifecycleState.detached;
+    //final service = FlutterBackgroundService();
+
+    /*if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) return;*/
+
+    if (isbackground) {
+      log('esta en background');
+    }
+
+    if (isClose) {}
+  }
 
   getTimerData(String name) {}
 
@@ -197,27 +219,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    // TODO: implement didChangeAppLifecycleState
-    super.didChangeAppLifecycleState(state);
-
-    final isbackground = state == AppLifecycleState.paused;
-    final isClose = state == AppLifecycleState.detached;
-    //final service = FlutterBackgroundService();
-
-    /*if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.detached) return;*/
-
-    if (isbackground) {
-      log('esta en background');
-    }
-
-    if (isClose) {
-      log('close');
-    }
   }
 
   @override
