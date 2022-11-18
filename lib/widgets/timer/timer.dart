@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'package:bg_service/main.dart';
+
 import '../../models/CountData.dart';
 
 import 'package:flutter/material.dart';
@@ -12,15 +15,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 final player = AudioPlayer();
 
 class TimerLess extends StatefulWidget {
-  TimerLess(
-      {super.key,
-      required this.tick,
-      this.timerName = 1,
-      required this.sendData});
+  TimerLess({
+    super.key,
+    required this.tick,
+    this.timerName = 1,
+  });
 
   final FlutterBackgroundService tick;
   int timerName = 1;
-  final Function(int, String) sendData;
 
   @override
   State<TimerLess> createState() => _TimerState();
@@ -39,17 +41,37 @@ class _TimerState extends State<TimerLess> {
     const Duration(milliseconds: 1000),
     const Duration(milliseconds: 500),
   ];
-
   int counter = 0;
   bool timerActive = false;
   int valueToPick = 15;
   int valueToReach = 0;
   bool isEndTimer = false;
+  late Timer timer;
 
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   String timerData = '';
   late String name;
   List<CountData> myTimerPersisnt = [];
+
+  CountData getJsonTimer(String data) {
+    var myTimer = CountData('', 0, true);
+    List<dynamic> json = jsonDecode(data);
+    json.forEach((element) => {
+          if (CountData.fromJson(element).name == name)
+            {
+              myTimer.name = CountData.fromJson(element).name,
+              myTimer.count = CountData.fromJson(element).count,
+              myTimer.status = CountData.fromJson(element).status,
+            }
+        });
+    return myTimer;
+  }
+
+  isTimerPending() async {
+    widget.tick.on('update').listen((event) async {
+      timerActive = await event!['status'];
+    });
+  }
 
   String timerPretty(int count) {
     var minutes = (count / 60).floor();
@@ -65,6 +87,15 @@ class _TimerState extends State<TimerLess> {
     return '$m : $s';
   }
 
+  startTimer() async {
+    Map<String, dynamic> timerData = {
+      "name": name,
+      "counter": counter,
+      "status": timerActive,
+    };
+    service.invoke("getTimer", timerData);
+  }
+
   Future playAudio() async {
     await player.play(AssetSource('sounds/Ereve.mp3'));
   }
@@ -73,53 +104,29 @@ class _TimerState extends State<TimerLess> {
     await player.stop();
   }
 
-  getDataTimer() async {
-    var prefs = await _prefs;
-    final String? data = await prefs.getString('timersData');
-    List<dynamic> json = jsonDecode(data!);
-
-    var myTimer = CountData('', 0);
-
-    json.forEach((element) => {
-          if (CountData.fromJson(element).name == name)
-            {
-              myTimer.name = CountData.fromJson(element).name,
-              myTimer.count = CountData.fromJson(element).count
-            }
-        });
-
-    // print(myTimer.name);
-    if (myTimer.count > 0) {
-      setState(() {
-        counter = myTimer.count;
-        timerActive = true;
-      });
-    }
-    setState(() {
-      timerData = '$counter';
-    });
-  }
-
   @override
   void initState() {
     super.initState();
-    getDataTimer();
     name = 'PC:${widget.timerName}';
+
+    //getDataTimer();
     widget.tick.on('update').listen((event) async {
-      if (counter > 0) {
-        if (timerActive == true) {
-          setState(() => counter--);
-          widget.sendData(counter, name);
+      await isTimerPending();
+      CountData myTimer = getJsonTimer(event!['data']);
+      int counterEvent = myTimer.count;
+      String nameEvent = myTimer.name;
+      bool stateEvent = myTimer.status;
+
+      timerActive = stateEvent;
+
+      if (timerActive) {
+        if (nameEvent == name) {
+          setState(() {
+            counter = counterEvent;
+          });
+
           if (counter <= 0) {
-            setState(() {
-              timerActive = false;
-              playAudio();
-
-              _dialogBuilder(context);
-              isEndTimer = true;
-            });
-
-            await onVibration();
+            timerActive = false;
           }
         }
       }
@@ -225,6 +232,7 @@ class _TimerState extends State<TimerLess> {
         setState(() {
           timerActive = value;
         });
+        startTimer();
       },
     );
   }
