@@ -29,7 +29,7 @@ class TimerLess extends StatefulWidget {
 }
 
 class _TimerState extends State<TimerLess> {
-  bool _canVibrate = true;
+  final bool _canVibrate = true;
   final Iterable<Duration> pauses = [
     const Duration(milliseconds: 500),
     const Duration(milliseconds: 1000),
@@ -53,18 +53,24 @@ class _TimerState extends State<TimerLess> {
   late String name;
   List<CountData> myTimerPersisnt = [];
 
-  CountData getJsonTimer(String data) {
-    var myTimer = CountData('', 0, true);
-    List<dynamic> json = jsonDecode(data);
-    json.forEach((element) => {
-          if (CountData.fromJson(element).name == name)
-            {
-              myTimer.name = CountData.fromJson(element).name,
-              myTimer.count = CountData.fromJson(element).count,
-              myTimer.status = CountData.fromJson(element).status,
-            }
-        });
-    return myTimer;
+  CountData getJsonTimer(Map<String, dynamic> data) {
+    var myTimer = CountData('', 0, false);
+    if (data['data'].isEmpty) {
+      log('${data['data']}');
+      return myTimer;
+    } else {
+      List<dynamic> json = jsonDecode(data['data']);
+      json.forEach((element) => {
+            if (CountData.fromJson(element).name == name)
+              {
+                myTimer.name = CountData.fromJson(element).name,
+                myTimer.count = CountData.fromJson(element).count,
+                myTimer.status = CountData.fromJson(element).status,
+              }
+          });
+      //log('${myTimer.name}');
+      return myTimer;
+    }
   }
 
   isTimerPending() async {
@@ -108,16 +114,18 @@ class _TimerState extends State<TimerLess> {
   void initState() {
     super.initState();
     name = 'PC:${widget.timerName}';
-
+    // isTimerPending();
     //getDataTimer();
     widget.tick.on('update').listen((event) async {
-      await isTimerPending();
-      CountData myTimer = getJsonTimer(event!['data']);
+      //isTimerPending();
+      CountData myTimer = getJsonTimer(event!);
       int counterEvent = myTimer.count;
       String nameEvent = myTimer.name;
       bool stateEvent = myTimer.status;
-
-      timerActive = stateEvent;
+      //log('$stateEvent');
+      setState(() {
+        timerActive = stateEvent;
+      });
 
       if (timerActive) {
         if (nameEvent == name) {
@@ -126,7 +134,14 @@ class _TimerState extends State<TimerLess> {
           });
 
           if (counter <= 0) {
-            timerActive = false;
+            setState(() {
+              timerActive = false;
+            });
+            startTimer();
+            playAudio();
+            await onVibration();
+            // ignore: use_build_context_synchronously
+            _dialogBuilder(context);
           }
         }
       }
@@ -259,7 +274,6 @@ class _TimerState extends State<TimerLess> {
               ),
               onPressed: () {
                 stopAudio();
-
                 Navigator.of(context).pop();
               },
             ),

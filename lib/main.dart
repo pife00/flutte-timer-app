@@ -75,6 +75,20 @@ Future<void> initializeService() async {
   );
 }
 
+String timerPretty(int count) {
+  var minutes = (count / 60).floor();
+  var seconds = (count % 60);
+  var m = '$minutes';
+  var s = '$seconds';
+  if (minutes < 10) {
+    m = '0$minutes';
+  }
+  if (seconds < 10) {
+    s = '0$seconds';
+  }
+  return '$m : $s';
+}
+
 Future<void> onStart(ServiceInstance service) async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -86,9 +100,6 @@ Future<void> onStart(ServiceInstance service) async {
   });
 
   service.on('getTimer').listen((event) {
-    //Map<String, dynamic>? data = event;
-    //payload = data as CountData;
-
     String? name = event?['name'];
     int? counter = event?['counter'];
     bool? status = event?['status'];
@@ -107,23 +118,18 @@ Future<void> onStart(ServiceInstance service) async {
         unique[key].status = payload.status;
       }
     });
-
-    //payload = CountData(data!['name'], data!['count']);
-    // print(payload.name);
   });
 
   // bring to foreground
   Timer.periodic(const Duration(seconds: 1), (timer) async {
-    final pref = await SharedPreferences.getInstance();
-    await pref.reload();
-    final String? timeData = pref.getString('timersData');
-    final String? date = pref.getString('date');
-
-    unique.forEach((element) {
+    var message = '';
+    var arr = [];
+    for (var element in unique) {
       if (element.count > 0 && element.status == true) {
         element.count--;
+        message = '$message ${element.name} ${timerPretty(element.count)} ';
       }
-    });
+    }
 
     //int? count = payload.count;
     // print(date);
@@ -131,8 +137,8 @@ Future<void> onStart(ServiceInstance service) async {
       if (await service.isForegroundService()) {
         flutterLocalNotificationsPlugin.show(
           notificationId,
-          'hello',
-          'Awesome ',
+          'Timers',
+          message,
           const NotificationDetails(
             android: AndroidNotificationDetails(
               notificationChannelId,
@@ -145,8 +151,14 @@ Future<void> onStart(ServiceInstance service) async {
       }
     }
 
-    String enconde = jsonEncode(unique);
-    service.invoke('update', {"data": enconde, "status": true});
+    if (unique.isEmpty) {
+      String enconde = jsonEncode(unique);
+      service.invoke('update', {"data": enconde});
+      //log('${unique.length}');
+    } else {
+      String enconde = jsonEncode(unique);
+      service.invoke('update', {"data": enconde});
+    }
   });
 }
 
