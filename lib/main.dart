@@ -12,6 +12,9 @@ import 'package:flutter_background_service_android/flutter_background_service_an
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_vibrate/flutter_vibrate.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeService();
@@ -21,6 +24,33 @@ void main() async {
 final service = FlutterBackgroundService();
 List<CountData> nameCounter = [];
 List<CountData> unique = [];
+final Iterable<Duration> pauses = [
+  const Duration(milliseconds: 500),
+  const Duration(milliseconds: 1000),
+  const Duration(milliseconds: 500),
+  const Duration(milliseconds: 500),
+  const Duration(milliseconds: 1000),
+  const Duration(milliseconds: 500),
+  const Duration(milliseconds: 500),
+  const Duration(milliseconds: 1000),
+  const Duration(milliseconds: 500),
+];
+final bool _canVibrate = true;
+final player = AudioPlayer();
+
+Future playAudio() async {
+  await player.play(AssetSource('sounds/Ereve.mp3'));
+}
+
+Future stopAudio() async {
+  await player.stop();
+}
+
+onVibration() async {
+  if (_canVibrate) {
+    await Vibrate.vibrateWithPauses(pauses);
+  }
+}
 
 // this will be used as notification channel id
 const notificationChannelId = 'my_foreground';
@@ -90,6 +120,7 @@ String timerPretty(int count) {
 }
 
 Future<void> onStart(ServiceInstance service) async {
+  BuildContext context;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -99,11 +130,17 @@ Future<void> onStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
+  service.on('stopMusic').listen((event) async {
+    await stopAudio();
+    log('OK ');
+  });
+
   service.on('getTimer').listen((event) {
     String? name = event?['name'];
     int? counter = event?['counter'];
     bool? status = event?['status'];
-    var payload = CountData(name!, counter!, status!);
+    bool? timeEnd = event?['timeEnd'];
+    var payload = CountData(name!, counter!, status!, timeEnd!);
     var seen = Set<String>();
     nameCounter.add(payload);
 
@@ -116,18 +153,28 @@ Future<void> onStart(ServiceInstance service) async {
         unique[key].name = payload.name;
         unique[key].count = payload.count;
         unique[key].status = payload.status;
+        unique[key].timeEnd = payload.timeEnd;
       }
     });
   });
 
   // bring to foreground
-  Timer.periodic(const Duration(seconds: 1), (timer) async {
-    var message = '';
-    var arr = [];
+  Timer.periodic(const Duration(milliseconds: 300), (timer) async {
+    String message = "";
+
     for (var element in unique) {
       if (element.count > 0 && element.status == true) {
         element.count--;
-        message = '$message ${element.name} ${timerPretty(element.count)} ';
+        message = '$message${element.name} ${timerPretty(element.count)}\n';
+
+        if (element.count == 0) {
+          await playAudio();
+          await onVibration();
+        }
+      }
+
+      if (unique.length > 0) {
+        print('${unique[0].count}:${unique[0].status}');
       }
     }
 
@@ -141,11 +188,10 @@ Future<void> onStart(ServiceInstance service) async {
           message,
           const NotificationDetails(
             android: AndroidNotificationDetails(
-              notificationChannelId,
-              'MY FOREGROUND SERVICE',
-              icon: 'ic_bg_service_small',
-              ongoing: true,
-            ),
+                notificationChannelId, 'MY FOREGROUND SERVICE',
+                icon: 'ic_bg_service_small',
+                ongoing: true,
+                styleInformation: BigTextStyleInformation('')),
           ),
         );
       }
@@ -184,13 +230,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Function(String)? getTimersData;
   int counter = 0;
+  bool isServiceActive = true;
 
-  List<TimerLess> myTimers = [
-    TimerLess(tick: service, timerName: 1),
-    TimerLess(tick: service, timerName: 2),
-    TimerLess(tick: service, timerName: 3),
-    TimerLess(tick: service, timerName: 4),
-  ];
+  stopMusic() async {
+    await stopAudio();
+  }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
@@ -211,8 +255,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (isClose) {}
   }
 
-  getTimerData(String name) {}
-
   @override
   void initState() {
     super.initState();
@@ -224,20 +266,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     service.startService();
   }
 
-  stopTimer() async {
+  stopService() async {
     final service = FlutterBackgroundService();
     var isRunning = await service.isRunning();
     if (isRunning) {
       service.invoke("stopService");
-      log('timer stop');
+      log('service stop');
+      isServiceActive = false;
     } else {
       service.startService();
-      log('timer on');
+      log('service on');
+      isServiceActive = true;
     }
     setState(() {});
   }
-
-  addTimer() {}
 
   @override
   void dispose() {
@@ -248,11 +290,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final service = FlutterBackgroundService();
-
+    List<TimerLess> myTimers = [
+      TimerLess(tick: service, timerName: 1, stopMusic: stopMusic),
+      TimerLess(tick: service, timerName: 2, stopMusic: stopMusic),
+      TimerLess(tick: service, timerName: 3, stopMusic: stopMusic),
+      TimerLess(tick: service, timerName: 4, stopMusic: stopMusic),
+    ];
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
-        title: const Text('Timers'),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            const Text('Timers'),
+            Switch(
+                value: isServiceActive,
+                activeColor: Colors.black,
+                onChanged: ((value) {
+                  setState(() {
+                    isServiceActive = value;
+                  });
+                  stopService();
+                }))
+          ],
+        ),
       ),
       body: Column(children: <Widget>[
         Expanded(
@@ -265,12 +326,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       floatingActionButton: FloatingActionButton(
         onPressed: null,
         child: InkWell(
-          onTap: () {
-            myTimers
-                .add(TimerLess(tick: service, timerName: myTimers.length + 1));
+          onTap: () async {
+            myTimers.add(TimerLess(
+                tick: service,
+                stopMusic: stopMusic,
+                timerName: myTimers.length + 1));
             setState(() {});
           },
-          onDoubleTap: stopTimer,
           child: const Icon(Icons.add),
         ),
       ),
