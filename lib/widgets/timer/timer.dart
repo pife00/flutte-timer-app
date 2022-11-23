@@ -165,7 +165,19 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
           padding: const EdgeInsets.all(3),
           child: Container(
             height: 115,
-            color: Colors.grey[800],
+            decoration: BoxDecoration(
+                color: timerActive
+                    ? Color.fromARGB(255, 37, 37, 35)
+                    : Colors.grey[900],
+                boxShadow: [
+                  BoxShadow(
+                      color: timerActive
+                          ? Colors.amber.withOpacity(0.3)
+                          : Colors.black.withOpacity(0.5),
+                      spreadRadius: 0.5,
+                      blurRadius: 1,
+                      offset: Offset(0, 2)),
+                ]),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[

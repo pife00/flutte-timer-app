@@ -300,13 +300,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
+        backgroundColor: Colors.grey[900],
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            const Text('Timers'),
+            Text(
+              'Timers',
+              style: TextStyle(
+                  color: isServiceActive ? Colors.amber : Colors.grey),
+            ),
             Switch(
                 value: isServiceActive,
-                activeColor: Colors.black,
+                activeColor: Colors.amber,
+                inactiveThumbColor: Colors.grey[700],
                 onChanged: ((value) {
                   setState(() {
                     isServiceActive = value;
