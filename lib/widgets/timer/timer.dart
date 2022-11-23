@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:bg_service/main.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/CountData.dart';
 
@@ -13,33 +14,32 @@ import 'package:numberpicker/numberpicker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TimerLess extends StatefulWidget {
-  TimerLess(
-      {super.key,
-      required this.tick,
-      this.timerName = 1,
-      required this.stopMusic});
+  TimerLess({
+    super.key,
+    required this.tick,
+    this.timerName = 1,
+  });
 
   final FlutterBackgroundService tick;
   int timerName = 1;
-  VoidCallback stopMusic;
 
   @override
   State<TimerLess> createState() => _TimerState();
 }
 
 class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   int counter = 0;
   bool timerActive = false;
   bool timeEnd = false;
   int valueToPick = 15;
   int valueToReach = 0;
   bool isEndTimer = false;
-  late Timer timer;
-
-  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   String timerData = '';
-  late String name;
   List<CountData> myTimerPersisnt = [];
+  String dateStartTimer = '';
+  late Timer timer;
+  late String name;
   late AnimationController _animationController;
 
   CountData getJsonTimer(Map<String, dynamic> data) {
@@ -83,6 +83,14 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
   }
 
   startTimer() async {
+    if (counter > 0) {
+      var now = DateTime.now();
+      var later = now.add(Duration(seconds: counter));
+      String formatter = DateFormat('jm').format(later);
+      setState(() {
+        dateStartTimer = formatter;
+      });
+    }
     Map<String, dynamic> timerData = {
       "name": name,
       "counter": counter,
@@ -156,63 +164,24 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         Padding(
           padding: const EdgeInsets.all(3),
           child: Container(
-            height: 100,
+            height: 115,
             color: Colors.grey[800],
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(2),
                   child: InkWell(
                     onTap: () {
-                      showModalBottomSheet<void>(
-                          context: context,
-                          builder: (context) {
-                            return StatefulBuilder(
-                              builder: ((context, setState) {
-                                return Container(
-                                  color: Colors.grey[800],
-                                  child: Column(
-                                    children: <Widget>[
-                                      NumberPicker(
-                                        textStyle:
-                                            TextStyle(color: Colors.amber[200]),
-                                        value: valueToPick,
-                                        step: 1,
-                                        minValue: 0,
-                                        maxValue: 100,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            valueToPick = value;
-                                          });
-                                        },
-                                      ),
-                                      TextButton(
-                                          style: TextButton.styleFrom(
-                                              backgroundColor: Colors.amber),
-                                          onPressed: (() {
-                                            handlerCounter();
-                                            Navigator.pop(context);
-                                          }),
-                                          child: const Text(
-                                            'OK',
-                                            style:
-                                                TextStyle(color: Colors.black),
-                                          )),
-                                    ],
-                                  ),
-                                );
-                              }),
-                            );
-                          });
+                      showModal(context);
                     },
-                    child: Text(timerPretty(counter),
-                        style: const TextStyle(
-                            color: Colors.amber,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 60)),
+                    child: Column(children: <Widget>[
+                      dateStart(dateStartTimer),
+                      showTimer(),
+                    ]),
                   ),
                 ),
+
                 // ignore: prefer_const_constructors
 
                 timeEnd ? stopButton() : Container(),
@@ -226,6 +195,114 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         ),
       ],
     );
+  }
+
+  Future<void> showModal(BuildContext context) {
+    return showModalBottomSheet<void>(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: ((context, setState) {
+              return Container(
+                color: Colors.grey[800],
+                child: Column(
+                  children: <Widget>[
+                    NumberPicker(
+                      textStyle: TextStyle(color: Colors.amber[200]),
+                      value: valueToPick,
+                      step: 1,
+                      minValue: 0,
+                      maxValue: 180,
+                      onChanged: (value) {
+                        setState(() {
+                          valueToPick = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                            style: TextButton.styleFrom(
+                                backgroundColor: Colors.amber),
+                            onPressed: (() {
+                              setState(() {
+                                valueToPick = 30;
+                              });
+                            }),
+                            child: const Text(
+                              '30',
+                              style: TextStyle(color: Colors.black),
+                            )),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.remove,
+                            color: Colors.amber,
+                          ),
+                          onPressed: () => setState(() {
+                            final newValue = valueToPick - 10;
+                            valueToPick = newValue.clamp(0, 100);
+                          }),
+                        ),
+                        Text(
+                          'Valor actual: $valueToPick',
+                          style: const TextStyle(color: Colors.amber),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, color: Colors.amber),
+                          onPressed: () => setState(() {
+                            final newValue = valueToPick + 20;
+                            valueToPick = newValue.clamp(0, 100);
+                          }),
+                        ),
+                        TextButton(
+                            style: TextButton.styleFrom(
+                                backgroundColor: Colors.amber),
+                            onPressed: (() {
+                              setState(() {
+                                valueToPick = 60;
+                              });
+                            }),
+                            child: const Text(
+                              '60',
+                              style: TextStyle(color: Colors.black),
+                            )),
+                      ],
+                    ),
+                    TextButton(
+                        style:
+                            TextButton.styleFrom(backgroundColor: Colors.amber),
+                        onPressed: (() {
+                          handlerCounter();
+                          Navigator.pop(context);
+                        }),
+                        child: const Text(
+                          'OK',
+                          style: TextStyle(color: Colors.black),
+                        )),
+                  ],
+                ),
+              );
+            }),
+          );
+        });
+  }
+
+  Widget dateStart(String dateStart) {
+    return Text(dateStartTimer,
+        style: TextStyle(
+            color: timerActive == true ? Colors.amber : Colors.grey[600],
+            fontWeight: FontWeight.w700,
+            fontSize: 12));
+  }
+
+  Widget showTimer() {
+    return Text(timerPretty(counter),
+        style: TextStyle(
+            color: timerActive == true ? Colors.amber : Colors.grey[600],
+            fontWeight: FontWeight.w700,
+            fontSize: 60));
   }
 
   Widget stopButton() {
@@ -244,10 +321,11 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
       // This bool value toggles the switch.
       value: timerActive,
       activeColor: Colors.amber,
+      inactiveThumbColor: Colors.grey[700],
       onChanged: (bool value) {
         setState(() {
           if (counter <= 0) {
-            timeEnd = !value;
+            timeEnd = false;
           }
           timerActive = value;
         });
@@ -257,6 +335,9 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
   }
 
   void stopMusic() {
+    setState(() {
+      timeEnd = false;
+    });
     service.invoke("stopMusic");
   }
 }

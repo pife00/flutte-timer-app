@@ -159,7 +159,7 @@ Future<void> onStart(ServiceInstance service) async {
   });
 
   // bring to foreground
-  Timer.periodic(const Duration(milliseconds: 300), (timer) async {
+  Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
     String message = "";
 
     for (var element in unique) {
@@ -171,10 +171,6 @@ Future<void> onStart(ServiceInstance service) async {
           await playAudio();
           await onVibration();
         }
-      }
-
-      if (unique.length > 0) {
-        print('${unique[0].count}:${unique[0].status}');
       }
     }
 
@@ -231,10 +227,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Function(String)? getTimersData;
   int counter = 0;
   bool isServiceActive = true;
-
-  stopMusic() async {
-    await stopAudio();
-  }
+  List<TimerLess> myTimers = [
+    TimerLess(
+      tick: service,
+      timerName: 1,
+    ),
+    TimerLess(
+      tick: service,
+      timerName: 2,
+    ),
+    TimerLess(
+      tick: service,
+      timerName: 3,
+    ),
+    TimerLess(
+      tick: service,
+      timerName: 4,
+    ),
+  ];
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
@@ -243,10 +253,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final pref = await SharedPreferences.getInstance();
     final isbackground = state == AppLifecycleState.paused;
     final isClose = state == AppLifecycleState.detached;
-    //final service = FlutterBackgroundService();
-
-    /*if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.detached) return;*/
 
     if (isbackground) {
       log('esta en background');
@@ -290,12 +296,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final service = FlutterBackgroundService();
-    List<TimerLess> myTimers = [
-      TimerLess(tick: service, timerName: 1, stopMusic: stopMusic),
-      TimerLess(tick: service, timerName: 2, stopMusic: stopMusic),
-      TimerLess(tick: service, timerName: 3, stopMusic: stopMusic),
-      TimerLess(tick: service, timerName: 4, stopMusic: stopMusic),
-    ];
+
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
@@ -327,10 +328,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onPressed: null,
         child: InkWell(
           onTap: () async {
-            myTimers.add(TimerLess(
-                tick: service,
-                stopMusic: stopMusic,
-                timerName: myTimers.length + 1));
+            myTimers
+                .add(TimerLess(tick: service, timerName: myTimers.length + 1));
             setState(() {});
           },
           child: const Icon(Icons.add),
