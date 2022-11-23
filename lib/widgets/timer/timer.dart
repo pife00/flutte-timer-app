@@ -116,8 +116,9 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
       });
 
     name = 'PC:${widget.timerName}';
-
+    log('$name: ${widget.key}');
     widget.tick.on('update').listen((event) async {
+      log(name);
       CountData myTimer = getJsonTimer(event!);
       int counterEvent = myTimer.count;
       String nameEvent = myTimer.name;
@@ -164,7 +165,7 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         Padding(
           padding: const EdgeInsets.all(3),
           child: Container(
-            height: 115,
+            height: 120,
             decoration: BoxDecoration(
                 color: timerActive
                     ? Color.fromARGB(255, 37, 37, 35)
@@ -190,6 +191,7 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
                     child: Column(children: <Widget>[
                       dateStart(dateStartTimer),
                       showTimer(),
+                      pcName(name),
                     ]),
                   ),
                 ),
@@ -303,6 +305,14 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
 
   Widget dateStart(String dateStart) {
     return Text(dateStartTimer,
+        style: TextStyle(
+            color: timerActive == true ? Colors.amber : Colors.grey[600],
+            fontWeight: FontWeight.w700,
+            fontSize: 12));
+  }
+
+  Widget pcName(String name) {
+    return Text(name,
         style: TextStyle(
             color: timerActive == true ? Colors.amber : Colors.grey[600],
             fontWeight: FontWeight.w700,

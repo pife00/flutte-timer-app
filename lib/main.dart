@@ -3,8 +3,9 @@ import './models/CountData.dart';
 import 'package:bg_service/widgets/timer/timer.dart';
 import 'package:flutter/material.dart';
 
+import 'dart:math' as math;
 import 'dart:async';
-import 'dart:developer';
+import 'dart:developer' as developer;
 
 import 'package:flutter_background_service/flutter_background_service.dart';
 
@@ -14,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
+import 'dart:math';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,8 +40,16 @@ final Iterable<Duration> pauses = [
 final bool _canVibrate = true;
 final player = AudioPlayer();
 
+final sounds = [
+  'sounds/Cozy.mp3',
+  'sounds/Hearthome.mp3',
+  'sounds/National.mp3',
+];
+
 Future playAudio() async {
-  await player.play(AssetSource('sounds/Ereve.mp3'));
+  var intValue = Random().nextInt(2);
+  String ringTone = sounds[intValue];
+  await player.play(AssetSource(ringTone));
 }
 
 Future stopAudio() async {
@@ -132,7 +142,6 @@ Future<void> onStart(ServiceInstance service) async {
 
   service.on('stopMusic').listen((event) async {
     await stopAudio();
-    log('OK ');
   });
 
   service.on('getTimer').listen((event) {
@@ -159,7 +168,7 @@ Future<void> onStart(ServiceInstance service) async {
   });
 
   // bring to foreground
-  Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
+  Timer.periodic(const Duration(milliseconds: 500), (timer) async {
     String message = "";
 
     for (var element in unique) {
@@ -244,8 +253,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       tick: service,
       timerName: 4,
     ),
+    TimerLess(
+      tick: service,
+      timerName: 5,
+    ),
   ];
-
+  Color colorBg = Color.fromRGBO(33, 33, 33, 1);
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     // TODO: implement didChangeAppLifecycleState
@@ -254,9 +267,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final isbackground = state == AppLifecycleState.paused;
     final isClose = state == AppLifecycleState.detached;
 
-    if (isbackground) {
-      log('esta en background');
-    }
+    if (isbackground) {}
 
     if (isClose) {}
   }
@@ -277,11 +288,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     var isRunning = await service.isRunning();
     if (isRunning) {
       service.invoke("stopService");
-      log('service stop');
+
       isServiceActive = false;
     } else {
       service.startService();
-      log('service on');
+
       isServiceActive = true;
     }
     setState(() {});
@@ -324,11 +335,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
       body: Column(children: <Widget>[
         Expanded(
-            child: ListView.builder(
-                itemCount: myTimers.length,
-                itemBuilder: (context, index) {
-                  return myTimers[index];
-                })),
+            child: ReorderableListView(
+          onReorder: ((oldIndex, newIndex) {
+            setState(() {
+              if (oldIndex < newIndex) {
+                newIndex -= 1;
+              }
+
+              final myTimer = myTimers.removeAt(oldIndex);
+              myTimers.insert(newIndex, myTimer);
+            });
+          }),
+          children: <Widget>[
+            for (int index = 0; index < myTimers.length; index += 1)
+              Container(
+                color: colorBg,
+                key: Key('$index'),
+                child: ListTile(
+                  title: myTimers[index],
+                  onTap: (() {}),
+                ),
+              )
+          ],
+        )),
       ]),
       floatingActionButton: FloatingActionButton(
         onPressed: null,
