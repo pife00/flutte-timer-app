@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import './models/CountData.dart';
 import 'package:bg_service/widgets/timer/timer.dart';
 import 'package:flutter/material.dart';
@@ -136,10 +137,9 @@ Future<void> onStart(ServiceInstance service) async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  List<CountData> payload = [];
-
   service.on('stopService').listen((event) {
     service.stopSelf();
+    developer.log('service stopped');
   });
 
   service.on('stopMusic').listen((event) async {
@@ -185,8 +185,6 @@ Future<void> onStart(ServiceInstance service) async {
       }
     }
 
-    //int? count = payload.count;
-    // print(date);
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         flutterLocalNotificationsPlugin.show(
@@ -260,19 +258,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Color colorBg = const Color.fromRGBO(33, 33, 33, 1);
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
+  void didChangeAppLifecycleState(
+    AppLifecycleState state,
+  ) async {
     super.didChangeAppLifecycleState(state);
-
+    ServiceInstance service;
     final isbackground = state == AppLifecycleState.paused;
     final isClose = state == AppLifecycleState.detached;
 
     if (isbackground) {}
 
-    if (isClose) {
-      if (isTimersActive == false) {
-        service.invoke('stopService');
-      }
-    }
+    if (isClose) {}
   }
 
   @override

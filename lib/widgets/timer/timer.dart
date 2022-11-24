@@ -159,12 +159,21 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    late final screenContainer;
+    switch (Device.orientation) {
+      case Orientation.portrait:
+        screenContainer = 15.h;
+        break;
+      case Orientation.landscape:
+        screenContainer = 32.h;
+        break;
+    }
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(3),
           child: Container(
-            height: 18.h,
+            height: screenContainer,
             decoration: BoxDecoration(
                 color: timerActive
                     ? const Color.fromARGB(255, 37, 37, 35)
@@ -216,87 +225,175 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         builder: (context) {
           return StatefulBuilder(
             builder: ((context, setState) {
-              return Container(
-                color: Colors.grey[800],
-                child: Column(
-                  children: <Widget>[
-                    NumberPicker(
-                      textStyle: TextStyle(color: Colors.amber[200]),
-                      value: valueToPick,
-                      step: 1,
-                      minValue: 0,
-                      maxValue: 180,
-                      onChanged: (value) {
-                        setState(() {
-                          valueToPick = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                            style: TextButton.styleFrom(
-                                backgroundColor: Colors.amber),
-                            onPressed: (() {
+              return Device.orientation == Orientation.portrait
+                  ? Container(
+                      color: Colors.grey[800],
+                      child: Column(
+                        children: <Widget>[
+                          NumberPicker(
+                            textStyle: TextStyle(color: Colors.amber[200]),
+                            value: valueToPick,
+                            step: 1,
+                            minValue: 0,
+                            maxValue: 180,
+                            onChanged: (value) {
                               setState(() {
-                                valueToPick = 30;
+                                valueToPick = value;
                               });
-                            }),
-                            child: const Text(
-                              '30',
-                              style: TextStyle(color: Colors.black),
-                            )),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove,
-                            color: Colors.amber,
+                            },
                           ),
-                          onPressed: () => setState(() {
-                            final newValue = valueToPick - 10;
-                            valueToPick = newValue.clamp(0, 100);
-                          }),
+                          const SizedBox(height: 32),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                  style: TextButton.styleFrom(
+                                      backgroundColor: Colors.amber),
+                                  onPressed: (() {
+                                    setState(() {
+                                      valueToPick = 30;
+                                    });
+                                  }),
+                                  child: const Text(
+                                    '30',
+                                    style: TextStyle(color: Colors.black),
+                                  )),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.remove,
+                                  color: Colors.amber,
+                                ),
+                                onPressed: () => setState(() {
+                                  final newValue = valueToPick - 10;
+                                  valueToPick = newValue.clamp(0, 100);
+                                }),
+                              ),
+                              Text(
+                                'Valor actual: $valueToPick',
+                                style: const TextStyle(color: Colors.amber),
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.add, color: Colors.amber),
+                                onPressed: () => setState(() {
+                                  final newValue = valueToPick + 20;
+                                  valueToPick = newValue.clamp(0, 100);
+                                }),
+                              ),
+                              TextButton(
+                                  style: TextButton.styleFrom(
+                                      backgroundColor: Colors.amber),
+                                  onPressed: (() {
+                                    setState(() {
+                                      valueToPick = 60;
+                                    });
+                                  }),
+                                  child: const Text(
+                                    '60',
+                                    style: TextStyle(color: Colors.black),
+                                  )),
+                            ],
+                          ),
+                          TextButton(
+                              style: TextButton.styleFrom(
+                                  backgroundColor: Colors.amber),
+                              onPressed: (() {
+                                handlerCounter();
+                                Navigator.pop(context);
+                              }),
+                              child: const Text(
+                                'OK',
+                                style: TextStyle(color: Colors.black),
+                              )),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      child: Container(
+                        color: Colors.grey[800],
+                        child: Column(
+                          children: <Widget>[
+                            NumberPicker(
+                              textStyle: TextStyle(color: Colors.amber[200]),
+                              value: valueToPick,
+                              minValue: 0,
+                              maxValue: 180,
+                              step: 1,
+                              itemHeight: 100,
+                              axis: Axis.horizontal,
+                              onChanged: (value) =>
+                                  setState(() => valueToPick = value),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.black26),
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                TextButton(
+                                    style: TextButton.styleFrom(
+                                        backgroundColor: Colors.amber),
+                                    onPressed: (() {
+                                      setState(() {
+                                        valueToPick = 30;
+                                      });
+                                    }),
+                                    child: const Text(
+                                      '30',
+                                      style: TextStyle(color: Colors.black),
+                                    )),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove,
+                                    color: Colors.amber,
+                                  ),
+                                  onPressed: () => setState(() {
+                                    final newValue = valueToPick - 10;
+                                    valueToPick = newValue.clamp(0, 100);
+                                  }),
+                                ),
+                                Text(
+                                  'Valor actual: $valueToPick',
+                                  style: const TextStyle(color: Colors.amber),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add,
+                                      color: Colors.amber),
+                                  onPressed: () => setState(() {
+                                    final newValue = valueToPick + 20;
+                                    valueToPick = newValue.clamp(0, 100);
+                                  }),
+                                ),
+                                TextButton(
+                                    style: TextButton.styleFrom(
+                                        backgroundColor: Colors.amber),
+                                    onPressed: (() {
+                                      setState(() {
+                                        valueToPick = 60;
+                                      });
+                                    }),
+                                    child: const Text(
+                                      '60',
+                                      style: TextStyle(color: Colors.black),
+                                    )),
+                              ],
+                            ),
+                            TextButton(
+                                style: TextButton.styleFrom(
+                                    backgroundColor: Colors.amber),
+                                onPressed: (() {
+                                  handlerCounter();
+                                  Navigator.pop(context);
+                                }),
+                                child: const Text(
+                                  'OK',
+                                  style: TextStyle(color: Colors.black),
+                                )),
+                          ],
                         ),
-                        Text(
-                          'Valor actual: $valueToPick',
-                          style: const TextStyle(color: Colors.amber),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add, color: Colors.amber),
-                          onPressed: () => setState(() {
-                            final newValue = valueToPick + 20;
-                            valueToPick = newValue.clamp(0, 100);
-                          }),
-                        ),
-                        TextButton(
-                            style: TextButton.styleFrom(
-                                backgroundColor: Colors.amber),
-                            onPressed: (() {
-                              setState(() {
-                                valueToPick = 60;
-                              });
-                            }),
-                            child: const Text(
-                              '60',
-                              style: TextStyle(color: Colors.black),
-                            )),
-                      ],
-                    ),
-                    TextButton(
-                        style:
-                            TextButton.styleFrom(backgroundColor: Colors.amber),
-                        onPressed: (() {
-                          handlerCounter();
-                          Navigator.pop(context);
-                        }),
-                        child: const Text(
-                          'OK',
-                          style: TextStyle(color: Colors.black),
-                        )),
-                  ],
-                ),
-              );
+                      ),
+                    );
             }),
           );
         });
