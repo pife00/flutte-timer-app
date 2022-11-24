@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'dart:math';
+import 'package:responsive_sizer/responsive_sizer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,8 @@ final Iterable<Duration> pauses = [
   const Duration(milliseconds: 1000),
   const Duration(milliseconds: 500),
 ];
-final bool _canVibrate = true;
+bool _canVibrate = true;
+bool isTimersActive = false;
 final player = AudioPlayer();
 
 final sounds = [
@@ -144,7 +146,7 @@ Future<void> onStart(ServiceInstance service) async {
     await stopAudio();
   });
 
-  service.on('getTimer').listen((event) {
+  service.on('getTimer').listen((event) async {
     String? name = event?['name'];
     int? counter = event?['counter'];
     bool? status = event?['status'];
@@ -168,7 +170,7 @@ Future<void> onStart(ServiceInstance service) async {
   });
 
   // bring to foreground
-  Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+  Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
     String message = "";
 
     for (var element in unique) {
@@ -205,23 +207,41 @@ Future<void> onStart(ServiceInstance service) async {
     if (unique.isEmpty) {
       String enconde = jsonEncode(unique);
       service.invoke('update', {"data": enconde});
-      //log('${unique.length}');
     } else {
       String enconde = jsonEncode(unique);
       service.invoke('update', {"data": enconde});
     }
+
+    shouldOffService(unique);
+    service.invoke('isTimersUpdate', {"data": isTimersActive});
   });
+}
+
+shouldOffService(List<CountData> unique) {
+  if (unique.isEmpty) {}
+
+  if (unique.isNotEmpty) {
+    for (var element in unique) {
+      if (element.count > 0) {
+        isTimersActive = true;
+      } else {
+        isTimersActive = false;
+      }
+    }
+  }
 }
 
 /// This is the main application widget.
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Timeless',
-      theme: ThemeData(primarySwatch: Colors.amber),
-      home: HomePage(),
-    );
+    return ResponsiveSizer(builder: (context, orientation, screenTyoe) {
+      return MaterialApp(
+        title: 'Timeless',
+        theme: ThemeData(primarySwatch: Colors.amber),
+        home: HomePage(),
+      );
+    });
   }
 }
 
@@ -236,46 +256,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Function(String)? getTimersData;
   int counter = 0;
   bool isServiceActive = true;
-  List<TimerLess> myTimers = [
-    TimerLess(
-      tick: service,
-      timerName: 1,
-    ),
-    TimerLess(
-      tick: service,
-      timerName: 2,
-    ),
-    TimerLess(
-      tick: service,
-      timerName: 3,
-    ),
-    TimerLess(
-      tick: service,
-      timerName: 4,
-    ),
-    TimerLess(
-      tick: service,
-      timerName: 5,
-    ),
-  ];
-  Color colorBg = Color.fromRGBO(33, 33, 33, 1);
+  List<int> myTimers = [1, 2, 3, 4, 5];
+  Color colorBg = const Color.fromRGBO(33, 33, 33, 1);
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
-    // TODO: implement didChangeAppLifecycleState
     super.didChangeAppLifecycleState(state);
-    final pref = await SharedPreferences.getInstance();
+
     final isbackground = state == AppLifecycleState.paused;
     final isClose = state == AppLifecycleState.detached;
 
     if (isbackground) {}
 
-    if (isClose) {}
+    if (isClose) {
+      if (isTimersActive == false) {
+        service.invoke('stopService');
+      }
+    }
   }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    service.on('isTimersUpdate').listen((event) {
+      isTimersActive = event!["data"];
+    });
   }
 
   void startTimer() {
@@ -347,12 +353,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             });
           }),
           children: <Widget>[
-            for (int index = 0; index < myTimers.length; index += 1)
+            for (int index in myTimers)
               Container(
                 color: colorBg,
-                key: Key('$index'),
+                key: ValueKey('$index'),
                 child: ListTile(
-                  title: myTimers[index],
+                  title: TimerLess(tick: service, timerName: index),
                   onTap: (() {}),
                 ),
               )
@@ -363,8 +369,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onPressed: null,
         child: InkWell(
           onTap: () async {
-            myTimers
-                .add(TimerLess(tick: service, timerName: myTimers.length + 1));
+            myTimers.add(myTimers.length + 1);
             setState(() {});
           },
           child: const Icon(Icons.add),

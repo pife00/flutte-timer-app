@@ -12,6 +12,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:responsive_sizer/responsive_sizer.dart';
 
 class TimerLess extends StatefulWidget {
   TimerLess({
@@ -45,7 +46,6 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
   CountData getJsonTimer(Map<String, dynamic> data) {
     var myTimer = CountData('', 0, false, false);
     if (data['data'].isEmpty) {
-      log('${data['data']}');
       return myTimer;
     } else {
       List<dynamic> json = jsonDecode(data['data']);
@@ -57,7 +57,7 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
                 myTimer.status = CountData.fromJson(element).status,
               }
           });
-      //log('${myTimer.name}');
+
       return myTimer;
     }
   }
@@ -116,9 +116,8 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
       });
 
     name = 'PC:${widget.timerName}';
-    log('$name: ${widget.key}');
+
     widget.tick.on('update').listen((event) async {
-      log(name);
       CountData myTimer = getJsonTimer(event!);
       int counterEvent = myTimer.count;
       String nameEvent = myTimer.name;
@@ -165,10 +164,10 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         Padding(
           padding: const EdgeInsets.all(3),
           child: Container(
-            height: 120,
+            height: 18.h,
             decoration: BoxDecoration(
                 color: timerActive
-                    ? Color.fromARGB(255, 37, 37, 35)
+                    ? const Color.fromARGB(255, 37, 37, 35)
                     : Colors.grey[900],
                 boxShadow: [
                   BoxShadow(
@@ -177,13 +176,13 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
                           : Colors.black.withOpacity(0.5),
                       spreadRadius: 0.5,
                       blurRadius: 1,
-                      offset: Offset(0, 2)),
+                      offset: const Offset(0, 2)),
                 ]),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.all(1),
                   child: InkWell(
                     onTap: () {
                       showModal(context);
@@ -308,7 +307,7 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         style: TextStyle(
             color: timerActive == true ? Colors.amber : Colors.grey[600],
             fontWeight: FontWeight.w700,
-            fontSize: 12));
+            fontSize: Adaptive.sp(15)));
   }
 
   Widget pcName(String name) {
@@ -316,15 +315,18 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
         style: TextStyle(
             color: timerActive == true ? Colors.amber : Colors.grey[600],
             fontWeight: FontWeight.w700,
-            fontSize: 12));
+            fontSize: Adaptive.sp(15)));
   }
 
   Widget showTimer() {
-    return Text(timerPretty(counter),
-        style: TextStyle(
-            color: timerActive == true ? Colors.amber : Colors.grey[600],
-            fontWeight: FontWeight.w700,
-            fontSize: 60));
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(timerPretty(counter),
+          style: TextStyle(
+              color: timerActive == true ? Colors.amber : Colors.grey[600],
+              fontWeight: FontWeight.w700,
+              fontSize: Adaptive.sp(30))),
+    );
   }
 
   Widget stopButton() {
