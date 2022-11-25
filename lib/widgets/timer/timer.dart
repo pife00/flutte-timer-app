@@ -159,21 +159,21 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    late final screenContainer;
+    /* late final screenContainer;
     switch (Device.orientation) {
       case Orientation.portrait:
-        screenContainer = 15.h;
+        screenContainer = 120;
         break;
       case Orientation.landscape:
-        screenContainer = 32.h;
+        screenContainer = 150;
         break;
-    }
+    }*/
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(3),
           child: Container(
-            height: screenContainer,
+            height: 120,
             decoration: BoxDecoration(
                 color: timerActive
                     ? const Color.fromARGB(255, 37, 37, 35)
@@ -422,7 +422,7 @@ class _TimerState extends State<TimerLess> with TickerProviderStateMixin {
           style: TextStyle(
               color: timerActive == true ? Colors.amber : Colors.grey[600],
               fontWeight: FontWeight.w700,
-              fontSize: Adaptive.sp(30))),
+              fontSize: Adaptive.sp(27))),
     );
   }
 

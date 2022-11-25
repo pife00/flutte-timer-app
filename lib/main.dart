@@ -335,32 +335,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         ),
       ),
-      body: Column(children: <Widget>[
-        Expanded(
-            child: ReorderableListView(
-          onReorder: ((oldIndex, newIndex) {
-            setState(() {
-              if (oldIndex < newIndex) {
-                newIndex -= 1;
-              }
+      body: ReorderableListView(
+        onReorder: ((oldIndex, newIndex) {
+          setState(() {
+            if (oldIndex < newIndex) {
+              newIndex -= 1;
+            }
 
-              final myTimer = myTimers.removeAt(oldIndex);
-              myTimers.insert(newIndex, myTimer);
-            });
-          }),
-          children: <Widget>[
-            for (int index in myTimers)
-              Container(
-                color: colorBg,
-                key: ValueKey('$index'),
-                child: ListTile(
-                  title: TimerLess(tick: service, timerName: index),
-                  onTap: (() {}),
-                ),
-              )
-          ],
-        )),
-      ]),
+            final myTimer = myTimers.removeAt(oldIndex);
+            myTimers.insert(newIndex, myTimer);
+          });
+        }),
+        children: <Widget>[
+          for (int index in myTimers)
+            Container(
+              color: colorBg,
+              key: ValueKey('$index'),
+              child: ListTile(
+                title: TimerLess(tick: service, timerName: index),
+                onTap: (() {}),
+              ),
+            )
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: null,
         child: InkWell(
